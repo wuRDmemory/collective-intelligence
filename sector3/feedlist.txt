@@ -1,4 +1,4 @@
-http://feeds.feedburner.com/37signals/beMH
+http://rssfeedurl.net/category/arts-and-entertainment/feed
 http://feeds.feedburner.com/blogspot/bRuz
 http://battellemedia.com/index.xml
 http://blog.guykawasaki.com/index.rdf

@@ -1,23 +1,7 @@
 import os
 import re
 import feedparser
-
-def get_words(html):
-    # replace all html tags
-    txt = re.sub(r'<[^>]+>', '', html)
-    res = re.split(r'[^a-z^A-Z]+', txt)
-
-    return [word for word in res if word != '']
-
-def get_wordcount(url):
-    d = feedparser.parse(url)
-    wc = {}
-
-    for e in d.entries:
-        if 'summary' in e:
-            summary = e.summary
-        else:
-            summary = e.description
+import sys
 
 html = ''\
 '<?xml version="1.0" encoding="utf-8"?>'\
@@ -47,6 +31,69 @@ html = ''\
     '</entry>'\
 '</feed>'
 
-if __name__ == '__main__':
-    print(get_words(html))
+def get_words(html):
+    # replace all html tags
+    txt = re.sub(r'<[^>]+>', '', html)
+    res = re.split(r'[^a-z^A-Z]+', txt)
 
+    return [word for word in res if word != '']
+
+def get_wordcount(url):
+    print(url)
+    try:
+        d = feedparser.parse(url)
+        wc = {}
+        for e in d.entries:
+            if 'summary' in e:
+                summary = e.summary
+            else:
+                summary = e.description
+
+            words = get_words(e.title+" "+summary)
+            for word in words:
+                wc.setdefault(word, 0)
+                wc[word]+=1
+        print(">>> title : {}".format(d.feed.title))
+        return d.feed.title, wc
+    except Exception:
+        return None, None
+
+if __name__ == '__main__':
+    feedlist_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'feedlist.txt')
+
+    apcount = {}
+    wordcounts = {}
+    feedlist = open(feedlist_path, 'r').readlines()
+    all_blogs = 0
+    for feedurl in feedlist:
+        feedurl = feedurl.strip()
+        title, wc = get_wordcount(feedurl)
+        if title is None:
+            continue
+        all_blogs += 1
+        wordcounts[title] = wc
+        for word, count in wc.items():
+            apcount.setdefault(word, 0)
+            if count > 1:
+                apcount[word] += 1
+    print(">>> all word: ", len(apcount))
+    wordlist = []
+    for word, count in apcount.items():
+        frac = float(count)/(all_blogs+1)
+        if frac > 0.1 and frac < 0.5:
+            wordlist.append(word)
+    print(">>> ROI word: ", len(wordlist))
+    out = open("blogdata.txt", 'w')
+    out.write('Blog')
+    for word in wordlist:
+        out.write("\t%s" %word)
+    out.write("\n")
+    for blogname, words in wordcounts.items():
+        out.write("{}".format(blogname))
+        for w in wordlist:
+            if w in words:
+                out.write("\t{}".format(words[w]))
+            else:
+                out.write("\t0")
+        out.write("\n")
+    out.close()
